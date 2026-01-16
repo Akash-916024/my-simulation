@@ -18,21 +18,18 @@ import {
   Triangle,
   Square,
   Minus,
-  TableProperties
+  TableProperties,
+  Layers
 } from 'lucide-react';
 
 /**
  * MATH HELPER FUNCTIONS
+ * (Logic Unchanged)
  */
 const toRad = (deg) => (deg * Math.PI) / 180;
 
-// Matrix multiplication: A (3x3) * B (3x3)
 const multiplyMatrices = (a, b) => {
-  const c = [
-    [0, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0]
-  ];
+  const c = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       for (let k = 0; k < 3; k++) {
@@ -43,57 +40,24 @@ const multiplyMatrices = (a, b) => {
   return c;
 };
 
-// Apply matrix to point {x, y}
 const applyMatrix = (matrix, point) => {
   const x = point.x;
   const y = point.y;
-  // Homogeneous coordinate [x, y, 1]
   const nx = matrix[0][0] * x + matrix[0][1] * y + matrix[0][2] * 1;
   const ny = matrix[1][0] * x + matrix[1][1] * y + matrix[1][2] * 1;
   return { x: nx, y: ny };
 };
 
-// Generate Identity Matrix
-const createIdentity = () => [
-  [1, 0, 0],
-  [0, 1, 0],
-  [0, 0, 1]
-];
-
-// Generate Translation Matrix
-const createTranslation = (dx, dy) => [
-  [1, 0, dx],
-  [0, 1, dy],
-  [0, 0, 1]
-];
-
-// Generate Scaling Matrix
-const createScaling = (sx, sy) => [
-  [sx, 0, 0],
-  [0, sy, 0],
-  [0, 0, 1]
-];
-
-// Generate Rotation Matrix
+const createIdentity = () => [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+const createTranslation = (dx, dy) => [[1, 0, dx], [0, 1, dy], [0, 0, 1]];
+const createScaling = (sx, sy) => [[sx, 0, 0], [0, sy, 0], [0, 0, 1]];
 const createRotation = (deg) => {
   const rad = toRad(deg);
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
-  return [
-    [cos, -sin, 0],
-    [sin, cos, 0],
-    [0, 0, 1]
-  ];
+  return [[cos, -sin, 0], [sin, cos, 0], [0, 0, 1]];
 };
-
-// Generate Shear Matrix
-const createShear = (shx, shy) => [
-  [1, shx, 0],
-  [shy, 1, 0],
-  [0, 0, 1]
-];
-
-// Generate Reflection Matrix
+const createShear = (shx, shy) => [[1, shx, 0], [shy, 1, 0], [0, 0, 1]];
 const createReflection = (type) => {
   switch (type) {
     case 'x-axis': return [[1, 0, 0], [0, -1, 0], [0, 0, 1]];
@@ -117,17 +81,17 @@ const generateCirclePoints = (cx, cy, r, segments = 36) => {
   return pts;
 };
 
-// Define Component OUTSIDE to prevent re-render/focus loss bugs
+// Updated Dark Mode Input Component
 const ControlInput = ({ label, value, onChange, type="number", step="0.1", min }) => (
-  <div className="flex flex-col">
-    <label className="text-[10px] text-slate-500 font-bold mb-1 uppercase">{label}</label>
+  <div className="flex flex-col group">
+    <label className="text-[10px] text-zinc-500 group-focus-within:text-blue-400 font-bold mb-1.5 uppercase tracking-wider">{label}</label>
     <input 
       type={type} 
       step={step}
       min={min}
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+      className="w-full bg-zinc-900 border border-zinc-700 rounded-sm px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono transition-all"
     />
   </div>
 );
@@ -136,50 +100,27 @@ const ControlInput = ({ label, value, onChange, type="number", step="0.1", min }
  * MAIN COMPONENT
  */
 export default function TransformationSimulator() {
-  // --- STATE ---
-  
-  // Shape Definition
-  const [shapeType, setShapeType] = useState('triangle'); // line, triangle, square, circle, custom
+  // --- STATE (Unchanged) ---
+  const [shapeType, setShapeType] = useState('triangle');
   const [circleParams, setCircleParams] = useState({ cx: 2, cy: 2, r: 1.5 });
-
-  const [points, setPoints] = useState([
-    { x: 1, y: 1 },
-    { x: 4, y: 1 },
-    { x: 2.5, y: 4 }
-  ]);
-
-  // Transformations Queue
+  const [points, setPoints] = useState([{ x: 1, y: 1 }, { x: 4, y: 1 }, { x: 2.5, y: 4 }]);
   const [transforms, setTransforms] = useState([]);
-  
-  // UI State
   const [viewStep, setViewStep] = useState(0); 
   const [showGrid, setShowGrid] = useState(true);
   const [showCoordinates, setShowCoordinates] = useState(true);
-  const [activeTab, setActiveTab] = useState('shape'); // 'add' or 'shape'
+  const [activeTab, setActiveTab] = useState('shape');
 
-  // --- LOGIC ---
-
+  // --- LOGIC (Unchanged) ---
   const loadPreset = (type) => {
     setShapeType(type);
     let newPoints = [];
     switch (type) {
-      case 'line':
-        newPoints = [{x: 1, y: 1}, {x: 4, y: 3}];
-        break;
-      case 'triangle':
-        newPoints = [{x: 1, y: 1}, {x: 4, y: 1}, {x: 2.5, y: 4}];
-        break;
-      case 'square':
-        newPoints = [{x: 1, y: 1}, {x: 4, y: 1}, {x: 4, y: 4}, {x: 1, y: 4}];
-        break;
-      case 'circle':
-        newPoints = generateCirclePoints(circleParams.cx, circleParams.cy, circleParams.r);
-        break;
-      case 'custom':
-        newPoints = [{x: 0, y: 0}, {x: 2, y: 0}, {x: 2, y: 2}, {x: 0, y: 2}, {x: -1, y: 1}];
-        break;
-      default:
-        newPoints = [{x: 0, y: 0}];
+      case 'line': newPoints = [{x: 1, y: 1}, {x: 4, y: 3}]; break;
+      case 'triangle': newPoints = [{x: 1, y: 1}, {x: 4, y: 1}, {x: 2.5, y: 4}]; break;
+      case 'square': newPoints = [{x: 1, y: 1}, {x: 4, y: 1}, {x: 4, y: 4}, {x: 1, y: 4}]; break;
+      case 'circle': newPoints = generateCirclePoints(circleParams.cx, circleParams.cy, circleParams.r); break;
+      case 'custom': newPoints = [{x: 0, y: 0}, {x: 2, y: 0}, {x: 2, y: 2}, {x: 0, y: 2}, {x: -1, y: 1}]; break;
+      default: newPoints = [{x: 0, y: 0}];
     }
     setPoints(newPoints);
     setTransforms([]); 
@@ -189,7 +130,6 @@ export default function TransformationSimulator() {
   const updateCircleParam = (key, value) => {
     const newParams = { ...circleParams, [key]: value };
     setCircleParams(newParams);
-    
     const val = parseFloat(value);
     if (!isNaN(val)) {
         const cleanParams = {
@@ -240,17 +180,10 @@ export default function TransformationSimulator() {
     if (viewStep > newTransforms.length) setViewStep(Math.max(0, newTransforms.length));
   };
 
-  // --- CALCULATION ENGINE ---
-
+  // --- CALCULATION (Unchanged) ---
   const stepsData = useMemo(() => {
     const cleanPoints = points.map(p => ({ x: parseFloat(p.x)||0, y: parseFloat(p.y)||0 }));
-    
-    const history = [{
-      name: 'Original',
-      points: cleanPoints,
-      matrix: createIdentity()
-    }];
-
+    const history = [{ name: 'ORIGINAL STATE', points: cleanPoints, matrix: createIdentity() }];
     let currentPoints = cleanPoints;
     let accumulatedMatrix = createIdentity();
 
@@ -261,13 +194,12 @@ export default function TransformationSimulator() {
       if (t.type === 'translate') {
         const { dx, dy } = t.params;
         stepMatrix = createTranslation(parseFloat(dx)||0, parseFloat(dy)||0);
-        stepName = `Trans(${dx}, ${dy})`;
+        stepName = `TRANS(${dx}, ${dy})`;
       } 
       else if (t.type === 'scale') {
         const { sx, sy, anchor, cx, cy } = t.params;
         const sX = parseFloat(sx)||1;
         const sY = parseFloat(sy)||1;
-        
         if (anchor === 'point') {
            const cX = parseFloat(cx)||0;
            const cY = parseFloat(cy)||0;
@@ -275,17 +207,16 @@ export default function TransformationSimulator() {
            const S = createScaling(sX, sY);
            const T2 = createTranslation(cX, cY);
            stepMatrix = multiplyMatrices(T2, multiplyMatrices(S, T1));
-           stepName = `Scale(${sX},${sY}) @(${cX},${cY})`;
+           stepName = `SCALE(${sX},${sY}) @(${cX},${cY})`;
         } else {
            stepMatrix = createScaling(sX, sY);
-           stepName = `Scale(${sX},${sY})`;
+           stepName = `SCALE(${sX},${sY})`;
         }
       } 
       else if (t.type === 'rotate') {
         const { angle, direction, anchor, cx, cy } = t.params;
         let deg = parseFloat(angle)||0;
         if (direction === 'CW') deg = -deg; 
-
         if (anchor === 'point') {
           const cX = parseFloat(cx)||0;
           const cY = parseFloat(cy)||0;
@@ -293,44 +224,34 @@ export default function TransformationSimulator() {
           const R = createRotation(deg);
           const T2 = createTranslation(cX, cY);
           stepMatrix = multiplyMatrices(T2, multiplyMatrices(R, T1));
-          stepName = `Rot(${deg}°) @(${cX},${cY})`;
+          stepName = `ROT(${deg}°) @(${cX},${cY})`;
         } else {
           stepMatrix = createRotation(deg);
-          stepName = `Rot(${deg}°)`;
+          stepName = `ROT(${deg}°)`;
         }
       } 
       else if (t.type === 'shear') {
         const { shx, shy } = t.params;
         stepMatrix = createShear(parseFloat(shx)||0, parseFloat(shy)||0);
-        stepName = `Shear(${shx}, ${shy})`;
+        stepName = `SHEAR(${shx}, ${shy})`;
       } 
       else if (t.type === 'reflect') {
         stepMatrix = createReflection(t.params.axis);
-        stepName = `Reflect ${t.params.axis}`;
+        stepName = `REFLECT ${t.params.axis}`;
       }
-
       currentPoints = currentPoints.map(p => applyMatrix(stepMatrix, p));
       accumulatedMatrix = multiplyMatrices(stepMatrix, accumulatedMatrix);
-
-      history.push({
-        name: `Step ${idx + 1}: ${stepName}`,
-        points: currentPoints,
-        matrix: stepMatrix
-      });
+      history.push({ name: `OP ${idx + 1}: ${stepName}`, points: currentPoints, matrix: stepMatrix });
     });
-
     return history;
   }, [points, transforms]);
 
-  // --- VISUALIZATION HELPERS ---
-  
+  // --- VISUALIZATION HELPERS (Updated Logic for Dark Mode rendering) ---
   const viewBox = useMemo(() => {
     let allPoints = [];
     stepsData.forEach(s => allPoints.push(...s.points));
     allPoints.push({x:0, y:0}); 
-    
     if(allPoints.length === 0) return { minX:-5, maxX:5, minY:-5, maxY:5, width:10, height:10 };
-
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     allPoints.forEach(p => {
         if(p.x < minX) minX = p.x;
@@ -338,14 +259,8 @@ export default function TransformationSimulator() {
         if(p.y < minY) minY = p.y;
         if(p.y > maxY) maxY = p.y;
     });
-
-    // Padding
     const padding = Math.max(Math.abs(maxX - minX), Math.abs(maxY - minY)) * 0.2 + 2;
-    minX -= padding;
-    maxX += padding;
-    minY -= padding;
-    maxY += padding;
-
+    minX -= padding; maxX += padding; minY -= padding; maxY += padding;
     return { minX, maxX, minY, maxY, width: maxX - minX, height: maxY - minY };
   }, [stepsData]);
 
@@ -355,7 +270,6 @@ export default function TransformationSimulator() {
   const gridLines = useMemo(() => {
     const lines = [];
     const stepSize = Math.max(1, Math.ceil(Math.max(viewBox.width, viewBox.height) / 10));
-    
     const startX = Math.floor(viewBox.minX / stepSize) * stepSize;
     for (let x = startX; x <= viewBox.maxX; x += stepSize) {
       lines.push({ x1: mapX(x), y1: 0, x2: mapX(x), y2: 100, val: x, type: 'v' });
@@ -370,42 +284,48 @@ export default function TransformationSimulator() {
   const currentStepData = stepsData[viewStep] || stepsData[0];
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-slate-100 text-slate-800 font-sans overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-screen bg-zinc-950 text-zinc-300 font-sans overflow-hidden selection:bg-blue-900 selection:text-white">
       
-      {/* LEFT PANEL */}
-      <div className="w-full lg:w-96 flex flex-col bg-white border-r border-slate-200 h-[35vh] lg:h-full shadow-xl z-20 flex-none">
-        <div className="p-3 bg-slate-900 text-white flex justify-between items-center shadow-md">
-          <h1 className="font-bold text-base flex items-center gap-2">
-            <LayoutGrid className="w-4 h-4 text-emerald-400" />
-            TransForm
+      {/* LEFT PANEL - DARK SIDEBAR */}
+      <div className="w-full lg:w-96 flex flex-col bg-zinc-900 border-r border-zinc-800 h-[40vh] lg:h-full shadow-2xl z-20 flex-none">
+        
+        {/* Header */}
+        <div className="h-12 border-b border-zinc-800 bg-zinc-900 flex justify-between items-center px-4 shrink-0">
+          <h1 className="font-bold text-sm tracking-widest flex items-center gap-2 text-zinc-100 uppercase">
+            <LayoutGrid className="w-4 h-4 text-blue-500" />
+            V-CAD <span className="text-[9px] text-zinc-600 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-800">SIMULATOR</span>
           </h1>
-          <div className="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-200 font-mono">v2.3</div>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200">
+        <div className="flex border-b border-zinc-800 bg-zinc-900/50">
           <button 
             onClick={() => setActiveTab('shape')}
-            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide transition-colors ${activeTab === 'shape' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'shape' ? 'text-blue-400 border-b-2 border-blue-500 bg-zinc-800/50' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
           >
-            Shape
+            Geometry
           </button>
           <button 
             onClick={() => setActiveTab('add')}
-            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide transition-colors ${activeTab === 'add' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'add' ? 'text-blue-400 border-b-2 border-blue-500 bg-zinc-800/50' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
           >
-            Transform
+            Operations
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-200">
+        {/* Scroll Area */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-8 scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700">
           
-          {/* SHAPE TAB */}
+          {/* GEOMETRY TAB */}
           {activeTab === 'shape' && (
-            <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
-              {/* Presets */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Shape</label>
+            <div className="space-y-8 animate-in slide-in-from-left-4 duration-300">
+              
+              {/* Shape Selector */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                   <Layers className="w-3 h-3" /> Primitives
+                </label>
                 <div className="grid grid-cols-5 gap-2">
                   {[
                     { id: 'line', icon: <Minus className="w-4 h-4 -rotate-45" /> },
@@ -417,7 +337,7 @@ export default function TransformationSimulator() {
                     <button
                       key={item.id}
                       onClick={() => loadPreset(item.id)}
-                      className={`h-9 rounded flex items-center justify-center border transition-all ${shapeType === item.id ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-100' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-500'}`}
+                      className={`h-10 rounded-sm flex items-center justify-center border transition-all ${shapeType === item.id ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:border-zinc-500 hover:text-zinc-300'}`}
                       title={item.id}
                     >
                       {item.icon}
@@ -426,52 +346,49 @@ export default function TransformationSimulator() {
                 </div>
               </div>
 
-              {/* Circle Specific Input */}
+              {/* Circle Params */}
               {shapeType === 'circle' && (
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold uppercase mb-1">
-                    <CircleIcon className="w-3 h-3" /> Circle Parameters
+                <div className="p-4 bg-zinc-800/30 rounded border border-zinc-700 space-y-4">
+                  <div className="flex items-center gap-2 text-zinc-300 text-[10px] font-bold uppercase tracking-wider pb-2 border-b border-zinc-700/50">
+                    <CircleIcon className="w-3 h-3 text-blue-500" /> Circle Properties
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <ControlInput label="Center X" value={circleParams.cx} onChange={v => updateCircleParam('cx', v)} />
                     <ControlInput label="Center Y" value={circleParams.cy} onChange={v => updateCircleParam('cy', v)} />
                   </div>
                   <ControlInput label="Radius" value={circleParams.r} onChange={v => updateCircleParam('r', v)} min="0.1" />
-                  <p className="text-[10px] text-emerald-600 leading-tight mt-1">
-                    * Represented as a 36-sided polygon to allow shearing and non-uniform scaling.
-                  </p>
                 </div>
               )}
 
-              {/* Point Editor */}
+              {/* Vertex Editor */}
               {shapeType !== 'circle' && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vertices (x, y)</label>
-                    <button onClick={addPoint} className="text-[10px] flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition-colors">
-                      <Plus className="w-3 h-3" /> Add
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Vertices</label>
+                    <button onClick={addPoint} className="text-[10px] flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 px-2 py-1 rounded-sm text-zinc-300 font-bold transition-all">
+                      <Plus className="w-3 h-3" /> ADD
                     </button>
                   </div>
                   <div className="space-y-2">
                     {points.map((p, idx) => (
                       <div key={idx} className="flex gap-2 items-center group animate-in fade-in duration-300">
-                        <span className="w-4 text-[10px] text-slate-400 font-mono text-center pt-1">{String.fromCharCode(65 + idx)}</span>
+                        <span className="w-6 text-[10px] text-zinc-600 font-mono text-center pt-1 font-bold">{String.fromCharCode(65 + idx)}</span>
                         <input 
                           type="number" value={p.x} 
                           onChange={(e) => updatePoint(idx, 'x', e.target.value)}
-                          className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono" 
+                          className="w-full p-1.5 bg-zinc-900 border border-zinc-700 hover:border-zinc-600 rounded-sm text-xs text-zinc-300 focus:border-blue-500 focus:outline-none font-mono transition-colors text-right" 
                           placeholder="X"
                         />
                         <input 
                           type="number" value={p.y} 
                           onChange={(e) => updatePoint(idx, 'y', e.target.value)}
-                          className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono" 
+                          className="w-full p-1.5 bg-zinc-900 border border-zinc-700 hover:border-zinc-600 rounded-sm text-xs text-zinc-300 focus:border-blue-500 focus:outline-none font-mono transition-colors text-right" 
                           placeholder="Y"
                         />
                         <button 
                           onClick={() => removePoint(idx)}
                           disabled={points.length <= 1}
-                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded disabled:opacity-0 transition-colors"
+                          className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-red-900/20 rounded disabled:opacity-0 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -483,60 +400,59 @@ export default function TransformationSimulator() {
             </div>
           )}
 
-          {/* TRANSFORMATIONS TAB */}
+          {/* OPERATIONS TAB */}
           {activeTab === 'add' && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Add Operation</label>
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Tools</label>
                 <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => addTransform('translate')} className="flex flex-col items-center justify-center p-2 border border-slate-200 rounded bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all group shadow-sm">
-                    <Move className="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-[10px] font-bold">Translate</span>
+                  <button onClick={() => addTransform('translate')} className="flex flex-col items-center justify-center p-3 border border-zinc-700 rounded-sm bg-zinc-800 hover:bg-zinc-700 hover:border-blue-500/50 hover:text-blue-400 text-zinc-400 transition-all group">
+                    <Move className="w-4 h-4 mb-2 opacity-70 group-hover:opacity-100" />
+                    <span className="text-[9px] font-bold uppercase">Move</span>
                   </button>
-                  <button onClick={() => addTransform('rotate')} className="flex flex-col items-center justify-center p-2 border border-slate-200 rounded bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all group shadow-sm">
-                    <RotateCw className="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-[10px] font-bold">Rotate</span>
+                  <button onClick={() => addTransform('rotate')} className="flex flex-col items-center justify-center p-3 border border-zinc-700 rounded-sm bg-zinc-800 hover:bg-zinc-700 hover:border-blue-500/50 hover:text-blue-400 text-zinc-400 transition-all group">
+                    <RotateCw className="w-4 h-4 mb-2 opacity-70 group-hover:opacity-100" />
+                    <span className="text-[9px] font-bold uppercase">Rotate</span>
                   </button>
-                  <button onClick={() => addTransform('scale')} className="flex flex-col items-center justify-center p-2 border border-slate-200 rounded bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all group shadow-sm">
-                    <Maximize className="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-[10px] font-bold">Scale</span>
+                  <button onClick={() => addTransform('scale')} className="flex flex-col items-center justify-center p-3 border border-zinc-700 rounded-sm bg-zinc-800 hover:bg-zinc-700 hover:border-blue-500/50 hover:text-blue-400 text-zinc-400 transition-all group">
+                    <Maximize className="w-4 h-4 mb-2 opacity-70 group-hover:opacity-100" />
+                    <span className="text-[9px] font-bold uppercase">Scale</span>
                   </button>
-                  <button onClick={() => addTransform('reflect')} className="flex flex-col items-center justify-center p-2 border border-slate-200 rounded bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all group shadow-sm">
-                    <FlipHorizontal className="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-[10px] font-bold">Reflect</span>
+                  <button onClick={() => addTransform('reflect')} className="flex flex-col items-center justify-center p-3 border border-zinc-700 rounded-sm bg-zinc-800 hover:bg-zinc-700 hover:border-blue-500/50 hover:text-blue-400 text-zinc-400 transition-all group">
+                    <FlipHorizontal className="w-4 h-4 mb-2 opacity-70 group-hover:opacity-100" />
+                    <span className="text-[9px] font-bold uppercase">Reflect</span>
                   </button>
-                  <button onClick={() => addTransform('shear')} className="flex flex-col items-center justify-center p-2 border border-slate-200 rounded bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all group shadow-sm">
-                    <Scissors className="w-4 h-4 mb-1 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-[10px] font-bold">Shear</span>
+                  <button onClick={() => addTransform('shear')} className="flex flex-col items-center justify-center p-3 border border-zinc-700 rounded-sm bg-zinc-800 hover:bg-zinc-700 hover:border-blue-500/50 hover:text-blue-400 text-zinc-400 transition-all group">
+                    <Scissors className="w-4 h-4 mb-2 opacity-70 group-hover:opacity-100" />
+                    <span className="text-[9px] font-bold uppercase">Shear</span>
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
-                  <span>Stack</span>
-                  <span className="bg-slate-200 text-slate-600 px-1.5 rounded text-[9px] py-0.5 font-mono">{transforms.length} OPS</span>
-                </label>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
+                   <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Modifier Stack</label>
+                   <span className="bg-blue-900/30 text-blue-300 border border-blue-900/50 px-1.5 rounded text-[9px] py-0.5 font-mono">{transforms.length}</span>
+                </div>
                 
                 {transforms.length === 0 && (
-                  <div className="text-center py-10 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 text-slate-400">
-                    <div className="text-sm font-medium">Empty Queue</div>
-                    <div className="text-xs mt-1 opacity-70">Add operations above</div>
+                  <div className="text-center py-12 bg-zinc-900/50 rounded border-2 border-dashed border-zinc-800 text-zinc-600">
+                    <div className="text-xs font-mono">STACK EMPTY</div>
                   </div>
                 )}
 
                 <div className="space-y-3">
                   {transforms.map((t, idx) => (
-                    <div key={t.id} className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden group transition-all hover:shadow-md hover:border-blue-200">
-                      <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-2">
-                          <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[9px]">{idx + 1}</span>
+                    <div key={t.id} className="bg-zinc-800 border border-zinc-700 rounded-sm shadow-sm overflow-hidden group">
+                      <div className="bg-zinc-900/80 px-3 py-2 border-b border-zinc-700 flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase flex items-center gap-2">
+                          <span className="w-4 h-4 rounded bg-zinc-800 text-zinc-500 flex items-center justify-center text-[9px] font-mono border border-zinc-700">{idx + 1}</span>
                           {t.type}
                         </span>
-                        <button onClick={() => removeTransform(t.id)} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => removeTransform(t.id)} className="text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                       
-                      <div className="p-3 grid gap-3">
+                      <div className="p-3 grid gap-4">
                         {/* TRANSLATE */}
                         {t.type === 'translate' && (
                           <div className="grid grid-cols-2 gap-3">
@@ -550,19 +466,19 @@ export default function TransformationSimulator() {
                           <>
                             <div className="grid grid-cols-2 gap-3">
                               <ControlInput label="Angle (°)" value={t.params.angle} onChange={v => updateTransform(t.id, 'angle', v)} />
-                              <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-500 font-bold mb-1 uppercase">Direction</label>
-                                <div className="flex bg-slate-100 p-0.5 rounded">
+                              <div className="flex flex-col group">
+                                <label className="text-[10px] text-zinc-500 font-bold mb-1.5 uppercase tracking-wider">Direction</label>
+                                <div className="flex bg-zinc-900 border border-zinc-700 p-0.5 rounded-sm">
                                    <button 
                                       onClick={() => updateTransform(t.id, 'direction', 'CCW')}
-                                      className={`flex-1 flex justify-center py-1 rounded text-[10px] font-bold ${t.params.direction === 'CCW' ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}
+                                      className={`flex-1 flex justify-center py-1 rounded-sm text-[10px] font-bold transition-all ${t.params.direction === 'CCW' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
                                       title="Counter Clockwise"
                                    >
                                      <RotateCcw className="w-3 h-3" />
                                    </button>
                                    <button 
                                       onClick={() => updateTransform(t.id, 'direction', 'CW')}
-                                      className={`flex-1 flex justify-center py-1 rounded text-[10px] font-bold ${t.params.direction === 'CW' ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}
+                                      className={`flex-1 flex justify-center py-1 rounded-sm text-[10px] font-bold transition-all ${t.params.direction === 'CW' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
                                       title="Clockwise"
                                    >
                                      <RotateCw className="w-3 h-3" />
@@ -572,9 +488,9 @@ export default function TransformationSimulator() {
                             </div>
                             
                             <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-500 font-bold mb-1 uppercase">Pivot Point</label>
+                                <label className="text-[10px] text-zinc-500 font-bold mb-1.5 uppercase tracking-wider">Pivot Point</label>
                                 <select 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-sm px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-blue-500"
                                     value={t.params.anchor}
                                     onChange={(e) => updateTransform(t.id, 'anchor', e.target.value)}
                                 >
@@ -584,7 +500,7 @@ export default function TransformationSimulator() {
                             </div>
                             
                             {t.params.anchor === 'point' && (
-                              <div className="grid grid-cols-2 gap-3 bg-blue-50/50 p-2 rounded border border-blue-100 animate-in fade-in">
+                              <div className="grid grid-cols-2 gap-3 bg-zinc-900/50 p-2 rounded-sm border border-zinc-700 animate-in fade-in">
                                   <ControlInput label="Pivot X" value={t.params.cx} onChange={v => updateTransform(t.id, 'cx', v)} />
                                   <ControlInput label="Pivot Y" value={t.params.cy} onChange={v => updateTransform(t.id, 'cy', v)} />
                               </div>
@@ -600,9 +516,9 @@ export default function TransformationSimulator() {
                               <ControlInput label="Factor Y" value={t.params.sy} onChange={v => updateTransform(t.id, 'sy', v)} />
                             </div>
                              <div className="flex flex-col">
-                                  <label className="text-[10px] text-slate-500 font-bold mb-1 uppercase">Scale Center</label>
+                                  <label className="text-[10px] text-zinc-500 font-bold mb-1.5 uppercase tracking-wider">Scale Center</label>
                                   <select 
-                                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      className="w-full bg-zinc-900 border border-zinc-700 rounded-sm px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-blue-500"
                                       value={t.params.anchor}
                                       onChange={(e) => updateTransform(t.id, 'anchor', e.target.value)}
                                   >
@@ -611,7 +527,7 @@ export default function TransformationSimulator() {
                                   </select>
                               </div>
                              {t.params.anchor === 'point' && (
-                              <div className="grid grid-cols-2 gap-3 bg-blue-50/50 p-2 rounded border border-blue-100 animate-in fade-in">
+                              <div className="grid grid-cols-2 gap-3 bg-zinc-900/50 p-2 rounded-sm border border-zinc-700 animate-in fade-in">
                                   <ControlInput label="Center X" value={t.params.cx} onChange={v => updateTransform(t.id, 'cx', v)} />
                                   <ControlInput label="Center Y" value={t.params.cy} onChange={v => updateTransform(t.id, 'cy', v)} />
                               </div>
@@ -630,9 +546,9 @@ export default function TransformationSimulator() {
                         {/* REFLECT */}
                         {t.type === 'reflect' && (
                           <div className="flex flex-col">
-                              <label className="text-[10px] text-slate-500 font-bold mb-1 uppercase">Reflection Axis</label>
+                              <label className="text-[10px] text-zinc-500 font-bold mb-1.5 uppercase tracking-wider">Reflection Axis</label>
                               <select 
-                                  className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-sm px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-blue-500"
                                   value={t.params.axis}
                                   onChange={(e) => updateTransform(t.id, 'axis', e.target.value)}
                               >
@@ -654,85 +570,88 @@ export default function TransformationSimulator() {
         </div>
       </div>
 
-      {/* RIGHT PANEL - Graph takes priority */}
-      <div className="flex-1 flex flex-col h-[65vh] lg:h-full overflow-hidden bg-slate-50 relative">
+      {/* RIGHT PANEL - DARK CANVAS */}
+      <div className="flex-1 flex flex-col h-[60vh] lg:h-full overflow-hidden bg-black relative">
         
         {/* Floating Toolbar */}
         <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
-          <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg p-1.5 pointer-events-auto flex gap-1">
+          <div className="bg-zinc-900/90 backdrop-blur shadow-xl border border-zinc-700 rounded p-1 pointer-events-auto flex gap-1">
             <button 
                 onClick={() => setShowGrid(!showGrid)} 
-                className={`p-2 rounded-md transition-colors ${showGrid ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-100'}`}
+                className={`p-2 rounded transition-colors ${showGrid ? 'bg-zinc-800 text-blue-400' : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}
                 title="Toggle Grid"
             >
-                <LayoutGrid className="w-5 h-5" />
+                <LayoutGrid className="w-4 h-4" />
             </button>
             <button 
                 onClick={() => setShowCoordinates(!showCoordinates)} 
-                className={`p-2 rounded-md transition-colors ${showCoordinates ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-100'}`}
+                className={`p-2 rounded transition-colors ${showCoordinates ? 'bg-zinc-800 text-blue-400' : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}
                 title="Toggle Labels"
             >
-                {showCoordinates ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                {showCoordinates ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
-            <div className="w-px bg-slate-200 mx-1 my-1"></div>
+            <div className="w-px bg-zinc-700 mx-1 my-1"></div>
             <button 
                 onClick={() => { setTransforms([]); setViewStep(0); }} 
-                className="p-2 rounded-md transition-colors text-slate-400 hover:bg-red-50 hover:text-red-500"
+                className="p-2 rounded transition-colors text-zinc-500 hover:bg-red-900/30 hover:text-red-400"
                 title="Reset All"
             >
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className="w-4 h-4" />
             </button>
           </div>
           
-          <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-3 py-1.5 pointer-events-auto max-w-xs text-right">
-             <div className="text-[10px] font-bold text-slate-400 uppercase">Current Step</div>
-             <div className="font-semibold text-slate-700 text-sm whitespace-nowrap">{stepsData[viewStep].name}</div>
+          <div className="bg-zinc-900/90 backdrop-blur shadow-xl border border-zinc-700 rounded px-4 py-2 pointer-events-auto max-w-xs text-right">
+             <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Active State</div>
+             <div className="font-mono text-zinc-200 text-xs mt-1 border-l-2 border-blue-500 pl-2">{stepsData[viewStep].name}</div>
           </div>
         </div>
 
-        {/* The Graph - FLEX GROW to fill space */}
-        <div className="flex-1 relative overflow-hidden flex items-center justify-center p-4 select-none cursor-crosshair bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] min-h-0">
-          <svg className="w-full h-full bg-white rounded-xl shadow-2xl border border-slate-200" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-            {/* Grid */}
+        {/* The Graph */}
+        <div className="flex-1 relative overflow-hidden flex items-center justify-center p-0 select-none cursor-crosshair bg-[#09090b]">
+          {/* Radial Gradient for depth */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(30,30,40,0.5)_0%,rgba(0,0,0,0)_100%)]"></div>
+          
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            {/* Dark Mode Grid */}
             {showGrid && gridLines.map((line, i) => (
               <g key={i}>
                 <line 
                   x1={line.x1} y1={line.y1} 
                   x2={line.x2} y2={line.y2} 
-                  stroke={line.val === 0 ? "#64748b" : "#f1f5f9"} 
-                  strokeWidth={line.val === 0 ? "0.6" : "0.3"}
+                  stroke={line.val === 0 ? "#52525b" : "#27272a"} 
+                  strokeWidth={line.val === 0 ? "0.4" : "0.15"}
                 />
                 {line.val !== 0 && (
                     line.type === 'v' 
-                    ? <text x={line.x1} y={mapY(0) + 3} fontSize="2" fill="#94a3b8" textAnchor="middle" fontWeight="500">{parseFloat(line.val.toFixed(1))}</text>
-                    : <text x={mapX(0) - 1.5} y={line.y2 + 0.8} fontSize="2" fill="#94a3b8" textAnchor="end" fontWeight="500">{parseFloat(line.val.toFixed(1))}</text>
+                    ? <text x={line.x1} y={mapY(0) + 3} fontSize="1.8" fill="#52525b" textAnchor="middle" fontWeight="400" className="font-mono">{parseFloat(line.val.toFixed(1))}</text>
+                    : <text x={mapX(0) - 1.5} y={line.y2 + 0.6} fontSize="1.8" fill="#52525b" textAnchor="end" fontWeight="400" className="font-mono">{parseFloat(line.val.toFixed(1))}</text>
                 )}
               </g>
             ))}
             
             {/* Origin */}
-            <circle cx={mapX(0)} cy={mapY(0)} r="0.8" fill="#475569" />
+            <circle cx={mapX(0)} cy={mapY(0)} r="0.6" fill="#71717a" />
 
             {/* Previous Ghost */}
             {viewStep > 0 && (
-              <g opacity="0.3">
+              <g opacity="0.4">
                 <polygon 
                   points={stepsData[viewStep - 1].points.map(p => `${mapX(p.x)},${mapY(p.y)}`).join(' ')} 
                   fill="none" 
-                  stroke="#94a3b8" 
-                  strokeWidth="0.5" 
-                  strokeDasharray="2"
+                  stroke="#52525b" 
+                  strokeWidth="0.4" 
+                  strokeDasharray="1.5"
                 />
               </g>
             )}
 
-            {/* Current Shape */}
+            {/* Current Shape - Cyan / Electric Blue theme */}
             <g>
               <polygon 
                 points={currentStepData.points.map(p => `${mapX(p.x)},${mapY(p.y)}`).join(' ')} 
-                fill={viewStep === 0 ? "rgba(37, 99, 235, 0.1)" : "rgba(16, 185, 129, 0.1)"} 
-                stroke={viewStep === 0 ? "#2563eb" : "#10b981"} 
-                strokeWidth="0.6" 
+                fill={viewStep === 0 ? "rgba(59, 130, 246, 0.15)" : "rgba(16, 185, 129, 0.15)"} 
+                stroke={viewStep === 0 ? "#3b82f6" : "#10b981"} 
+                strokeWidth="0.5" 
                 vectorEffect="non-scaling-stroke"
                 className="transition-all duration-500 ease-in-out"
               />
@@ -740,9 +659,9 @@ export default function TransformationSimulator() {
               {/* Vertices */}
               {currentStepData.points.length < 20 && currentStepData.points.map((p, i) => (
                 <g key={i}>
-                  <circle cx={mapX(p.x)} cy={mapY(p.y)} r="0.8" fill="white" stroke={viewStep === 0 ? "#2563eb" : "#10b981"} strokeWidth="0.3" />
+                  <circle cx={mapX(p.x)} cy={mapY(p.y)} r="0.8" fill="#18181b" stroke={viewStep === 0 ? "#60a5fa" : "#34d399"} strokeWidth="0.3" />
                   {showCoordinates && (
-                     <text x={mapX(p.x)} y={mapY(p.y) - 2} fontSize="2.2" textAnchor="middle" fill="#334155" fontWeight="700" style={{textShadow: '0 1px 2px white'}}>
+                     <text x={mapX(p.x)} y={mapY(p.y) - 2.5} fontSize="2" textAnchor="middle" fill="#e4e4e7" fontWeight="bold" className="font-sans">
                        {String.fromCharCode(65+i)}
                      </text>
                   )}
@@ -754,46 +673,37 @@ export default function TransformationSimulator() {
                  <circle 
                     cx={mapX(currentStepData.points.reduce((sum, p) => sum + p.x, 0) / currentStepData.points.length)} 
                     cy={mapY(currentStepData.points.reduce((sum, p) => sum + p.y, 0) / currentStepData.points.length)} 
-                    r="0.5" fill={viewStep === 0 ? "#2563eb" : "#10b981"} 
+                    r="0.5" fill={viewStep === 0 ? "#3b82f6" : "#10b981"} 
                  />
               )}
             </g>
 
-            {/* Pivot Point Indicator */}
+            {/* Pivot Point Indicator - Bright Red */}
             {transforms[viewStep - 1]?.params.anchor === 'point' && (
                 <g>
-                   <line x1={mapX(transforms[viewStep - 1].params.cx)-2} y1={mapY(transforms[viewStep - 1].params.cy)} x2={mapX(transforms[viewStep - 1].params.cx)+2} y2={mapY(transforms[viewStep - 1].params.cy)} stroke="#ef4444" strokeWidth="0.2" />
-                   <line x1={mapX(transforms[viewStep - 1].params.cx)} y1={mapY(transforms[viewStep - 1].params.cy)-2} x2={mapX(transforms[viewStep - 1].params.cx)} y2={mapY(transforms[viewStep - 1].params.cy)+2} stroke="#ef4444" strokeWidth="0.2" />
-                   <text 
-                    x={mapX(transforms[viewStep - 1].params.cx)} 
-                    y={mapY(transforms[viewStep - 1].params.cy) - 2} 
-                    fontSize="2" 
-                    fill="#ef4444" 
-                    textAnchor="middle"
-                    fontWeight="bold"
-                   >
-                       PIVOT
-                   </text>
+                   <line x1={mapX(transforms[viewStep - 1].params.cx)-2} y1={mapY(transforms[viewStep - 1].params.cy)} x2={mapX(transforms[viewStep - 1].params.cx)+2} y2={mapY(transforms[viewStep - 1].params.cy)} stroke="#f43f5e" strokeWidth="0.2" />
+                   <line x1={mapX(transforms[viewStep - 1].params.cx)} y1={mapY(transforms[viewStep - 1].params.cy)-2} x2={mapX(transforms[viewStep - 1].params.cx)} y2={mapY(transforms[viewStep - 1].params.cy)+2} stroke="#f43f5e" strokeWidth="0.2" />
+                   <text x={mapX(transforms[viewStep - 1].params.cx)} y={mapY(transforms[viewStep - 1].params.cy) - 2.5} fontSize="1.8" fill="#f43f5e" textAnchor="middle" fontWeight="bold" className="font-mono">PIVOT</text>
                 </g>
             )}
           </svg>
         </div>
 
-        {/* BOTTOM PANEL - COMPACT, NO MATRIX */}
-        <div className="bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 flex flex-col flex-none">
+        {/* BOTTOM PANEL - FOOTER */}
+        <div className="bg-zinc-900 border-t border-zinc-800 z-20 flex flex-col flex-none">
             {/* Playback Controls */}
-            <div className="px-6 py-2 border-b border-slate-100 flex items-center gap-4 bg-slate-50 flex-none">
+            <div className="px-6 py-3 border-b border-zinc-800 flex items-center gap-4 bg-zinc-900 flex-none">
                 <button 
                   onClick={() => setViewStep(Math.max(0, viewStep - 1))}
                   disabled={viewStep === 0}
-                  className="p-1.5 rounded-full hover:bg-white hover:shadow text-slate-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 >
                   <ChevronRight className="w-5 h-5 rotate-180" />
                 </button>
                 
-                <div className="flex-1 relative h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="flex-1 relative h-1 bg-zinc-800 rounded-full overflow-hidden">
                   <div 
-                    className="absolute top-0 bottom-0 left-0 bg-blue-500 transition-all duration-300"
+                    className="absolute top-0 bottom-0 left-0 bg-blue-600 transition-all duration-300 shadow-[0_0_10px_#2563eb]"
                     style={{ width: `${(viewStep / Math.max(1, stepsData.length - 1)) * 100}%` }}
                   ></div>
                 </div>
@@ -801,31 +711,30 @@ export default function TransformationSimulator() {
                 <button 
                   onClick={() => setViewStep(Math.min(stepsData.length - 1, viewStep + 1))}
                   disabled={viewStep === stepsData.length - 1}
-                  className="p-1.5 rounded-full hover:bg-white hover:shadow text-slate-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
             </div>
 
-            {/* Coordinates - Horizontal Scroll Stripe */}
-            <div className="bg-white flex items-center border-t border-slate-100">
-               <div className="px-4 py-3 bg-slate-50 border-r border-slate-100 text-[10px] font-bold text-slate-400 uppercase flex-none flex items-center gap-2">
+            {/* Coordinates Display */}
+            <div className="bg-zinc-950 flex items-center text-xs h-10">
+               <div className="px-4 h-full bg-zinc-900 border-r border-zinc-800 text-[10px] font-bold text-zinc-500 uppercase flex-none flex items-center gap-2">
                  <TableProperties className="w-3 h-3" />
                  Coordinates
                </div>
                
-               <div className="flex-1 overflow-x-auto whitespace-nowrap p-3 scrollbar-thin scrollbar-thumb-slate-200 flex gap-4 items-center">
+               <div className="flex-1 overflow-x-auto whitespace-nowrap px-4 scrollbar-hide flex gap-6 items-center h-full">
                   {currentStepData.points.length > 20 ? (
-                      <div className="text-xs text-slate-400 italic px-2">
-                          Shape is approximated by {currentStepData.points.length} vertices (Circle). Coordinates hidden.
+                      <div className="text-[10px] text-zinc-600 font-mono tracking-tight">
+                          CIRCLE APPROXIMATION ({currentStepData.points.length} VERTICES)
                       </div>
                   ) : (
                       currentStepData.points.map((p, i) => (
-                        <div key={i} className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded border border-slate-200 text-xs shadow-sm">
-                            <span className="font-bold text-blue-500 w-4">{String.fromCharCode(65+i)}</span>
-                            <span className="w-px h-3 bg-slate-300"></span>
-                            <span className="font-mono text-slate-700 font-medium">
-                                {(p?.x || 0).toFixed(2)}, {(p?.y || 0).toFixed(2)}
+                        <div key={i} className="flex items-center gap-2">
+                            <span className="font-bold text-blue-500 font-sans text-[10px]">{String.fromCharCode(65+i)}</span>
+                            <span className="font-mono text-zinc-400 font-medium tracking-tight">
+                                <span className="text-zinc-600">x:</span>{p?.x.toFixed(2)} <span className="text-zinc-600 ml-1">y:</span>{p?.y.toFixed(2)}
                             </span>
                         </div>
                       ))
@@ -833,10 +742,7 @@ export default function TransformationSimulator() {
                </div>
             </div>
         </div>
-
       </div>
- 
    </div>
- 
  );
 }
